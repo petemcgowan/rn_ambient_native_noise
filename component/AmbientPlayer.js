@@ -1,12 +1,11 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {TouchableOpacity, Image, FlatList} from 'react-native';
+import {TouchableOpacity, Image} from 'react-native';
 import {SafeAreaView, View, Text, StyleSheet, Dimensions} from 'react-native';
 
 import TrackPlayer, {
   useProgress,
   Capability,
   Event,
-  RepeatMode,
   State,
   usePlaybackState,
   useTrackPlayerEvents,
@@ -18,6 +17,9 @@ import Slider from '@react-native-community/slider';
 import songs from '../model/data';
 import {Animated} from 'react-native';
 import {TimePicker, ValueMap} from 'react-native-simple-time-picker';
+import PowerButton from './PowerButton';
+
+import {useDerivedValue, useSharedValue} from 'react-native-reanimated';
 
 const {width, height} = Dimensions.get('window');
 
@@ -49,6 +51,11 @@ const togglePlayback = async playbackState => {
 };
 
 const AmbientPlayer = () => {
+  const theta = useSharedValue(2 * Math.PI * 1.001);
+  const animateTo = useDerivedValue(() => 2 * Math.PI * invertedCompletion);
+  const textOpacity = useSharedValue(0);
+  const percentageComplete = 85;
+  const invertedCompletion = (100 - percentageComplete) / 100;
   const playbackState = usePlaybackState();
   const progress = useProgress();
 
@@ -204,22 +211,18 @@ const AmbientPlayer = () => {
             )}
           />
         </View>
-        <View>
-          <Text style={styles.title}>{trackTitle}</Text>
-          <Text style={styles.artist}>{trackArtist}</Text>
-        </View>
 
         <View style={styles.musicControls}>
-          <TouchableOpacity onPress={skipToPrevious}>
+          {/* <TouchableOpacity onPress={skipToPrevious}>
             <Ionicons
               name="play-skip-back-outline"
               size={35}
               color="#FFD369"
               style={{marginTop: 25}}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={() => togglePlayback(playbackState)}>
-            <Ionicons
+            {/* <Ionicons
               name={
                 playbackState === State.Playing
                   ? 'ios-pause-circle'
@@ -227,21 +230,37 @@ const AmbientPlayer = () => {
               }
               size={75}
               color="#FFD369"
+            /> */}
+            <PowerButton
+              theta={theta}
+              animateTo={animateTo}
+              textOpacity={textOpacity}
+              invertedCompletion={invertedCompletion}
+              percentageComplete={percentageComplete}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={skipToNext}>
+          {/* <TouchableOpacity onPress={skipToNext}>
             <Ionicons
               name="play-skip-forward-outline"
               size={35}
               color="#FFD369"
               style={{marginTop: 25}}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity onPress={testOutput}>
+        <TouchableOpacity
+          onPress={() => {
+            if (!textOpacity.value) {
+              theta.value = animateTo.value;
+              textOpacity.value = 1;
+            } else {
+              theta.value = 2 * Math.PI * 1.001;
+              textOpacity.value = 0;
+            }
+          }}>
           <Ionicons
             name="play-skip-back-outline"
             size={35}
@@ -338,8 +357,8 @@ const styles = StyleSheet.create({
   },
   musicControls: {
     flexDirection: 'row',
-    width: '60%',
-    justifyContent: 'space-between',
+    width: '100%',
+    justifyContent: 'center',
     marginTop: 15,
   },
   artist: {
